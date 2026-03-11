@@ -1806,17 +1806,18 @@ setTimeout(() => {
     fd[field] = val;
     if (field === 'anreisedatum') {
       var abrInput = document.getElementById('f-abreise');
-      if (abrInput && val) {
+      if (val) {
         var nd = new Date(val + 'T12:00:00');
-        nd.setDate(nd.getDate() + 1);
-        abrInput.min = nd.toISOString().split('T')[0];
-        if (fd.abreisedatum && fd.abreisedatum <= val) {
-          fd.abreisedatum = ''; abrInput.value = '';
-        }
+        nd.setDate(nd.getDate() + 4);
+        fd.abreisedatum = nd.toISOString().split('T')[0];
+        if (abrInput) abrInput.value = fd.abreisedatum;
+      } else {
+        fd.abreisedatum = '';
+        if (abrInput) abrInput.value = '';
       }
     }
     var btn = document.getElementById('funnelNextBtn');
-    if (btn) btn.disabled = !fd.anreisedatum || !fd.abreisedatum;
+    if (btn) btn.disabled = !fd.anreisedatum;
   };
   window.funnelSubmit = function () {
     var v = document.getElementById('f-vorname').value.trim();
@@ -1877,7 +1878,7 @@ setTimeout(() => {
 
   function room(name, detail, img) {
     var cls = 'funnel-room' + (fd.zimmerkategorie === name ? ' selected' : '');
-    return '<div class="' + cls + '" data-fv="' + name + '" onclick="funnelSelect(\'zimmerkategorie\',\'' + name + '\',true)">' +
+    return '<div class="' + cls + '" data-fv="' + name + '" onclick="funnelSelect(\'zimmerkategorie\',\'' + name + '\',false)">' +
       '<div class="funnel-room-img"><img src="' + img + '" alt="' + name + '" loading="lazy"></div>' +
       '<div class="funnel-room-info"><div class="funnel-room-name">' + name + '</div><div class="funnel-room-detail">' + detail + '</div></div></div>';
   }
@@ -1907,21 +1908,21 @@ setTimeout(() => {
           nav(false, false);
 
       case 2: {
-        var abrMin = '2026-06-08';
+        var abrVal = '';
         if (fd.anreisedatum) {
           var nd = new Date(fd.anreisedatum + 'T12:00:00');
-          nd.setDate(nd.getDate() + 1);
-          abrMin = nd.toISOString().split('T')[0];
+          nd.setDate(nd.getDate() + 4);
+          abrVal = nd.toISOString().split('T')[0];
         }
-        return '<h2 class="funnel-title">Wann reist du?</h2>' +
-          '<p class="funnel-subtitle">Das Angebot gilt vom 07.06. bis 21.06.2026.</p>' +
+        return '<h2 class="funnel-title">Wann reist du an?</h2>' +
+          '<p class="funnel-subtitle">Das Angebot umfasst genau 4 Nächte – die Abreise wird automatisch berechnet.</p>' +
           '<div class="funnel-date-grid">' +
           '<div class="funnel-field"><label>Anreise</label>' +
-          '<input type="date" class="funnel-date-input" id="f-anreise" min="2026-06-07" max="2026-06-21" value="' + (fd.anreisedatum||'') + '" onchange="funnelDateChange(\'anreisedatum\',this.value)"></div>' +
-          '<div class="funnel-field"><label>Abreise</label>' +
-          '<input type="date" class="funnel-date-input" id="f-abreise" min="' + abrMin + '" max="2026-06-25" value="' + (fd.abreisedatum||'') + '" onchange="funnelDateChange(\'abreisedatum\',this.value)"></div>' +
+          '<input type="date" class="funnel-date-input" id="f-anreise" min="2026-06-07" max="2026-06-17" value="' + (fd.anreisedatum||'') + '" onchange="funnelDateChange(\'anreisedatum\',this.value)"></div>' +
+          '<div class="funnel-field"><label>Abreise <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--stone);font-size:0.65rem;">(4 Nächte · automatisch)</span></label>' +
+          '<input type="date" class="funnel-date-input" id="f-abreise" value="' + abrVal + '" disabled style="background:var(--parchment);opacity:0.7;cursor:not-allowed;"></div>' +
           '</div>' +
-          nav(true, !fd.anreisedatum || !fd.abreisedatum);
+          nav(true, !fd.anreisedatum);
       }
 
       case 3:
@@ -1938,16 +1939,16 @@ setTimeout(() => {
         return '<h2 class="funnel-title">Mit Frühstück?</h2>' +
           '<p class="funnel-subtitle">Unser Buffet mit regionalen Tiroler Spezialitäten.</p>' +
           '<div class="funnel-choices cols-2">' +
-          choice('fruehstueck','Ja','☕','Frühstücksbuffet',true) +
-          choice('fruehstueck','Nein','🙅','Ohne Frühstück',true) +
+          choice('fruehstueck','Ja','☕','Frühstücksbuffet',false) +
+          choice('fruehstueck','Nein','🙅','Ohne Frühstück',false) +
           '</div>' + nav(true, !fd.fruehstueck);
 
       case 5:
         return '<h2 class="funnel-title">Reist du mit Hund?</h2>' +
           '<p class="funnel-subtitle">Dein Hund ist bei uns herzlich willkommen.</p>' +
           '<div class="funnel-choices cols-2">' +
-          choice('hund','Ja','🐶','Hund kommt mit',true) +
-          choice('hund','Nein','🙅','Kein Hund',true) +
+          choice('hund','Ja','🐶','Hund kommt mit',false) +
+          choice('hund','Nein','🙅','Kein Hund',false) +
           '</div>' + nav(true, !fd.hund);
 
       case 6:
