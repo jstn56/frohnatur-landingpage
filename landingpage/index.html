@@ -1143,7 +1143,37 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(44,74,46,0.08); }
   .funnel-rooms { grid-template-columns: 1fr; }
   .funnel-room-img { height: 80px; }
   .funnel-form-grid { grid-template-columns: 1fr; }
+  .funnel-date-grid { grid-template-columns: 1fr; }
 }
+.funnel-stepper-wrap { margin-bottom: 20px; }
+.funnel-stepper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--parchment);
+}
+.funnel-stepper-row:first-child { border-top: 1px solid var(--parchment); }
+.funnel-stepper-label { font-family: var(--serif); font-size: 1rem; font-weight: 600; color: var(--charcoal); margin-bottom: 2px; }
+.funnel-stepper-sub { font-size: 0.72rem; color: var(--bark); }
+.funnel-stepper-ctrl { display: flex; align-items: center; gap: 20px; }
+.funnel-stepper-btn {
+  width: 36px; height: 36px;
+  border: 2px solid var(--parchment);
+  background: var(--snow);
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s;
+  color: var(--forest);
+}
+.funnel-stepper-btn:hover:not(:disabled) { border-color: var(--forest); }
+.funnel-stepper-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.funnel-stepper-val { font-family: var(--serif); font-size: 1.4rem; font-weight: 700; color: var(--charcoal); min-width: 28px; text-align: center; }
+.funnel-date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
 </style>
 </head>
 <body>
@@ -1156,8 +1186,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <form name="funnel-anfrage" data-netlify="true" netlify-honeypot="bot-field" hidden>
   <input type="hidden" name="form-name" value="funnel-anfrage">
   <input name="bot-field">
-  <input name="reisegruppe">
+  <input name="erwachsene">
+  <input name="kinder">
   <input name="anreisedatum">
+  <input name="abreisedatum">
   <input name="zimmerkategorie">
   <input name="fruehstueck">
   <input name="hund">
@@ -1734,7 +1766,7 @@ setTimeout(() => {
 
 // ── FUNNEL MULTI-STEP ──
 (function () {
-  var fd = { reisegruppe:'', anreisedatum:'', zimmerkategorie:'', fruehstueck:'', hund:'', vorname:'', nachname:'', email:'', telefon:'' };
+  var fd = { erwachsene:2, kinder:0, anreisedatum:'', abreisedatum:'', zimmerkategorie:'', fruehstueck:'', hund:'', vorname:'', nachname:'', email:'', telefon:'' };
   var step = 1;
   var overlay = document.getElementById('funnelOverlay');
   var modal   = document.getElementById('funnelModal');
@@ -1749,8 +1781,18 @@ setTimeout(() => {
     overlay.classList.remove('open');
     document.body.style.overflow = '';
   };
-  window.funnelNext = function () { if (step < 7) { step++; render(); } };
+  window.funnelNext = function () { if (step < 6) { step++; render(); } };
   window.funnelPrev = function () { if (step > 1) { step--; render(); } };
+
+  window.funnelAdjust = function (key, delta) {
+    var min = key === 'erwachsene' ? 1 : 0;
+    fd[key] = Math.min(10, Math.max(min, fd[key] + delta));
+    var disp = document.getElementById('fv-' + key);
+    if (disp) disp.textContent = fd[key];
+    var btnMinus = document.getElementById('fb-' + key + '-minus');
+    if (btnMinus) btnMinus.disabled = fd[key] <= min;
+  };
+
   window.funnelSelect = function (key, value, autoAdv) {
     fd[key] = value;
     [].forEach.call(document.querySelectorAll('[data-fv]'), function (el) {
@@ -1760,10 +1802,21 @@ setTimeout(() => {
     if (btn) btn.disabled = false;
     if (autoAdv) setTimeout(window.funnelNext, 400);
   };
-  window.funnelDateChange = function (val) {
-    fd.anreisedatum = val;
+  window.funnelDateChange = function (field, val) {
+    fd[field] = val;
+    if (field === 'anreisedatum') {
+      var abrInput = document.getElementById('f-abreise');
+      if (abrInput && val) {
+        var nd = new Date(val + 'T12:00:00');
+        nd.setDate(nd.getDate() + 1);
+        abrInput.min = nd.toISOString().split('T')[0];
+        if (fd.abreisedatum && fd.abreisedatum <= val) {
+          fd.abreisedatum = ''; abrInput.value = '';
+        }
+      }
+    }
     var btn = document.getElementById('funnelNextBtn');
-    if (btn) btn.disabled = !val;
+    if (btn) btn.disabled = !fd.anreisedatum || !fd.abreisedatum;
   };
   window.funnelSubmit = function () {
     var v = document.getElementById('f-vorname').value.trim();
@@ -1777,7 +1830,8 @@ setTimeout(() => {
     var p = new URLSearchParams(window.location.search);
     var body = new URLSearchParams({
       'form-name': 'funnel-anfrage', 'bot-field': '',
-      reisegruppe: fd.reisegruppe, anreisedatum: fd.anreisedatum,
+      erwachsene: fd.erwachsene, kinder: fd.kinder,
+      anreisedatum: fd.anreisedatum, abreisedatum: fd.abreisedatum,
       zimmerkategorie: fd.zimmerkategorie, fruehstueck: fd.fruehstueck,
       hund: fd.hund, vorname: fd.vorname, nachname: fd.nachname,
       email: fd.email, telefon: fd.telefon,
@@ -1786,7 +1840,10 @@ setTimeout(() => {
       utm_term: p.get('utm_term')||''
     });
     fetch('/', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: body.toString() })
-      .finally(function () { step = 7; render(); });
+      .finally(function () {
+        var utmStr = p.toString() ? '?' + p.toString() : '';
+        window.location.href = '/danke.html' + utmStr;
+      });
   };
 
   // Intercept all #anfragen CTAs
@@ -1797,9 +1854,9 @@ setTimeout(() => {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && overlay.classList.contains('open')) window.closeFunnel(); });
 
   function render() {
-    var pct = Math.round((step / 7) * 100);
+    var pct = Math.round((step / 6) * 100);
     document.getElementById('funnelProgressBar').style.width = pct + '%';
-    document.getElementById('funnelStepLabel').textContent = step <= 6 ? 'Schritt ' + step + ' von 6' : '';
+    document.getElementById('funnelStepLabel').textContent = 'Schritt ' + step + ' von 6';
     document.getElementById('funnelBody').innerHTML = buildStep(step);
     modal.scrollTop = 0;
   }
@@ -1825,25 +1882,47 @@ setTimeout(() => {
       '<div class="funnel-room-info"><div class="funnel-room-name">' + name + '</div><div class="funnel-room-detail">' + detail + '</div></div></div>';
   }
 
+  function stepper(key, label, sub, min) {
+    var val = fd[key];
+    return '<div class="funnel-stepper-row">' +
+      '<div><div class="funnel-stepper-label">' + label + '</div><div class="funnel-stepper-sub">' + sub + '</div></div>' +
+      '<div class="funnel-stepper-ctrl">' +
+      '<button class="funnel-stepper-btn" id="fb-' + key + '-minus" onclick="funnelAdjust(\'' + key + '\',-1)"' + (val <= min ? ' disabled' : '') + '>−</button>' +
+      '<span class="funnel-stepper-val" id="fv-' + key + '">' + val + '</span>' +
+      '<button class="funnel-stepper-btn" onclick="funnelAdjust(\'' + key + '\',1)">+</button>' +
+      '</div></div>';
+  }
+
   function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   function buildStep(s) {
     switch (s) {
       case 1:
         return '<h2 class="funnel-title">Wer reist mit?</h2>' +
-          '<p class="funnel-subtitle">Damit wir das passende Zimmer für dich finden.</p>' +
-          '<div class="funnel-choices cols-3">' +
-          choice('reisegruppe','Alleine','🧍','1 Person',true) +
-          choice('reisegruppe','Paar','👫','2 Personen',true) +
-          choice('reisegruppe','Familie','👨‍👩‍👧‍👦','Ab 3 Personen',true) +
-          '</div>' + nav(false, !fd.reisegruppe);
+          '<p class="funnel-subtitle">Wie viele Personen reisen an?</p>' +
+          '<div class="funnel-stepper-wrap">' +
+          stepper('erwachsene', 'Erwachsene', 'ab 18 Jahren', 1) +
+          stepper('kinder', 'Kinder', 'unter 18 Jahren', 0) +
+          '</div>' +
+          nav(false, false);
 
-      case 2:
-        return '<h2 class="funnel-title">Wann möchtest du anreisen?</h2>' +
+      case 2: {
+        var abrMin = '2026-06-08';
+        if (fd.anreisedatum) {
+          var nd = new Date(fd.anreisedatum + 'T12:00:00');
+          nd.setDate(nd.getDate() + 1);
+          abrMin = nd.toISOString().split('T')[0];
+        }
+        return '<h2 class="funnel-title">Wann reist du?</h2>' +
           '<p class="funnel-subtitle">Das Angebot gilt vom 07.06. bis 21.06.2026.</p>' +
-          '<div class="funnel-date-wrap"><input type="date" class="funnel-date-input" id="f-datum" ' +
-          'min="2026-06-07" max="2026-06-21" value="' + (fd.anreisedatum||'') + '" onchange="funnelDateChange(this.value)"></div>' +
-          nav(true, !fd.anreisedatum);
+          '<div class="funnel-date-grid">' +
+          '<div class="funnel-field"><label>Anreise</label>' +
+          '<input type="date" class="funnel-date-input" id="f-anreise" min="2026-06-07" max="2026-06-21" value="' + (fd.anreisedatum||'') + '" onchange="funnelDateChange(\'anreisedatum\',this.value)"></div>' +
+          '<div class="funnel-field"><label>Abreise</label>' +
+          '<input type="date" class="funnel-date-input" id="f-abreise" min="' + abrMin + '" max="2026-06-25" value="' + (fd.abreisedatum||'') + '" onchange="funnelDateChange(\'abreisedatum\',this.value)"></div>' +
+          '</div>' +
+          nav(true, !fd.anreisedatum || !fd.abreisedatum);
+      }
 
       case 3:
         return '<h2 class="funnel-title">Welches Zimmer interessiert dich?</h2>' +
@@ -1884,27 +1963,6 @@ setTimeout(() => {
           '<div class="funnel-nav"><button class="funnel-btn-back" onclick="funnelPrev()">Zurück</button>' +
           '<button class="funnel-btn-next" onclick="funnelSubmit()">Anfrage absenden</button></div>';
 
-      case 7: {
-        var dateStr = '';
-        if (fd.anreisedatum) {
-          var d = new Date(fd.anreisedatum + 'T12:00:00');
-          dateStr = d.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
-        }
-        return '<div class="funnel-thankyou">' +
-          '<span class="funnel-thankyou-icon">🏔</span>' +
-          '<h2>Vielen Dank' + (fd.vorname ? ',<br>' + esc(fd.vorname) : '') + '!</h2>' +
-          '<p>Wir melden uns innerhalb von 24 Stunden bei dir.</p>' +
-          '<div class="funnel-summary">' +
-          (fd.reisegruppe ? '<strong>Reisegruppe:</strong> ' + esc(fd.reisegruppe) + '<br>' : '') +
-          (dateStr ? '<strong>Anreise:</strong> ' + dateStr + '<br>' : '') +
-          (fd.zimmerkategorie ? '<strong>Zimmer:</strong> ' + esc(fd.zimmerkategorie) + '<br>' : '') +
-          (fd.fruehstueck ? '<strong>Frühstück:</strong> ' + esc(fd.fruehstueck) + '<br>' : '') +
-          (fd.hund === 'Ja' ? '<strong>Hund:</strong> Ja<br>' : '') +
-          (fd.email ? '<strong>E-Mail:</strong> ' + esc(fd.email) : '') +
-          '</div>' +
-          '<button class="funnel-btn-next" style="max-width:220px;margin:8px auto 0;display:block;" onclick="closeFunnel()">Fenster schließen</button>' +
-          '</div>';
-      }
       default: return '';
     }
   }
