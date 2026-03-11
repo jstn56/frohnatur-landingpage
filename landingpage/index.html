@@ -1133,6 +1133,28 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(44,74,46,0.08); }
   line-height: 1.9;
   text-align: left;
 }
+.funnel-checkbox-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.funnel-checkbox-wrap input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--forest);
+  cursor: pointer;
+}
+.funnel-checkbox-wrap label {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--bark);
+  cursor: pointer;
+}
+.funnel-checkbox-wrap label a { color: var(--forest); text-decoration: underline; }
+.funnel-checkbox-error { font-size: 0.75rem; color: #c0392b; margin-bottom: 12px; display: none; }
 .funnel-honeypot { display: none !important; visibility: hidden !important; }
 @media (max-width: 600px) {
   .funnel-overlay { padding: 0; align-items: flex-end; }
@@ -1174,6 +1196,27 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(44,74,46,0.08); }
 .funnel-stepper-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .funnel-stepper-val { font-family: var(--serif); font-size: 1.4rem; font-weight: 700; color: var(--charcoal); min-width: 28px; text-align: center; }
 .funnel-date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.funnel-date-pills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.funnel-date-pill {
+  border: 2px solid var(--parchment);
+  background: var(--snow);
+  padding: 12px 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+.funnel-date-pill:hover { border-color: var(--sage); }
+.funnel-date-pill.selected { border-color: var(--forest); background: rgba(44,74,46,0.07); }
+.funnel-pill-day { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--bark); }
+.funnel-pill-date { font-family: var(--serif); font-size: 0.88rem; font-weight: 600; color: var(--charcoal); }
+.funnel-dep-info { background: var(--parchment); padding: 12px 16px; font-size: 0.88rem; color: var(--bark); margin-bottom: 16px; text-align: center; }
+.funnel-dep-info strong { color: var(--forest); }
+@media (max-width: 600px) { .funnel-date-pills { grid-template-columns: repeat(3, 1fr); } }
 </style>
 </head>
 <body>
@@ -1802,6 +1845,21 @@ setTimeout(() => {
     if (btn) btn.disabled = false;
     if (autoAdv) setTimeout(window.funnelNext, 400);
   };
+  window.selectArrival = function (val) {
+    fd.anreisedatum = val;
+    var nd = new Date(val + 'T12:00:00');
+    nd.setDate(nd.getDate() + 4);
+    fd.abreisedatum = nd.toISOString().split('T')[0];
+    document.querySelectorAll('.funnel-date-pill').forEach(function (el) {
+      el.classList.toggle('selected', el.getAttribute('data-val') === val);
+    });
+    var depDate = nd.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+    var depEl = document.getElementById('funnel-dep-info');
+    if (depEl) { depEl.innerHTML = 'Abreise: <strong>' + depDate + '</strong>'; depEl.style.display = 'block'; }
+    var btn = document.getElementById('funnelNextBtn');
+    if (btn) btn.disabled = false;
+  };
+
   window.funnelDateChange = function (field, val) {
     fd[field] = val;
     if (field === 'anreisedatum') {
@@ -1824,6 +1882,12 @@ setTimeout(() => {
     var em = document.getElementById('f-email').value.trim();
     if (!v) { document.getElementById('f-vorname').focus(); return; }
     if (!em) { document.getElementById('f-email').focus(); return; }
+    var ds = document.getElementById('f-datenschutz');
+    if (!ds || !ds.checked) {
+      var errEl = document.getElementById('f-datenschutz-error');
+      if (errEl) errEl.style.display = 'block';
+      return;
+    }
     fd.vorname  = v;
     fd.nachname = document.getElementById('f-nachname').value.trim();
     fd.email    = em;
@@ -1908,20 +1972,25 @@ setTimeout(() => {
           nav(false, false);
 
       case 2: {
-        var abrVal = '';
-        if (fd.anreisedatum) {
-          var nd = new Date(fd.anreisedatum + 'T12:00:00');
-          nd.setDate(nd.getDate() + 4);
-          abrVal = nd.toISOString().split('T')[0];
+        var dayNames = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+        var pills = '';
+        for (var i = 7; i <= 17; i++) {
+          var d = new Date(2026, 5, i);
+          var dVal = '2026-06-' + (i < 10 ? '0' + i : '' + i);
+          var dCls = 'funnel-date-pill' + (fd.anreisedatum === dVal ? ' selected' : '');
+          pills += '<div class="' + dCls + '" data-val="' + dVal + '" onclick="selectArrival(\'' + dVal + '\')">' +
+            '<span class="funnel-pill-day">' + dayNames[d.getDay()] + '</span>' +
+            '<span class="funnel-pill-date">' + (i < 10 ? '0' : '') + i + '.06.</span></div>';
+        }
+        var depStr = '';
+        if (fd.abreisedatum) {
+          var depD = new Date(fd.abreisedatum + 'T12:00:00');
+          depStr = 'Abreise: <strong>' + depD.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' }) + '</strong>';
         }
         return '<h2 class="funnel-title">Wann reist du an?</h2>' +
-          '<p class="funnel-subtitle">Das Angebot umfasst genau 4 Nächte – die Abreise wird automatisch berechnet.</p>' +
-          '<div class="funnel-date-grid">' +
-          '<div class="funnel-field"><label>Anreise</label>' +
-          '<input type="date" class="funnel-date-input" id="f-anreise" min="2026-06-07" max="2026-06-17" value="' + (fd.anreisedatum||'') + '" onchange="funnelDateChange(\'anreisedatum\',this.value)" onclick="try{this.showPicker()}catch(e){}"></div>' +
-          '<div class="funnel-field"><label>Abreise <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--stone);font-size:0.65rem;">(4 Nächte · automatisch)</span></label>' +
-          '<input type="date" class="funnel-date-input" id="f-abreise" value="' + abrVal + '" disabled style="background:var(--parchment);opacity:0.7;cursor:not-allowed;"></div>' +
-          '</div>' +
+          '<p class="funnel-subtitle">07.06. – 21.06.2026 · Das Angebot umfasst genau 4 Nächte</p>' +
+          '<div class="funnel-date-pills">' + pills + '</div>' +
+          '<div id="funnel-dep-info" class="funnel-dep-info"' + (!fd.anreisedatum ? ' style="display:none"' : '') + '>' + depStr + '</div>' +
           nav(true, !fd.anreisedatum);
       }
 
@@ -1960,6 +2029,11 @@ setTimeout(() => {
           '<div class="funnel-field"><label for="f-email">E-Mail *</label><input type="email" id="f-email" placeholder="maria@beispiel.at" value="' + esc(fd.email) + '"></div>' +
           '<div class="funnel-field"><label for="f-telefon">Telefon</label><input type="tel" id="f-telefon" placeholder="+43 123 456789" value="' + esc(fd.telefon) + '"></div>' +
           '</div>' +
+          '<div class="funnel-checkbox-wrap">' +
+          '<input type="checkbox" id="f-datenschutz">' +
+          '<label for="f-datenschutz">Ich habe die <a href="https://frohnatur.tirol/datenschutz/" target="_blank" rel="noopener">Datenschutzerklärung</a> gelesen und stimme der Verarbeitung meiner Daten zu.</label>' +
+          '</div>' +
+          '<div class="funnel-checkbox-error" id="f-datenschutz-error">Bitte stimme der Datenschutzerklärung zu.</div>' +
           '<p class="funnel-honeypot"><input name="bot-field" tabindex="-1" autocomplete="off"></p>' +
           '<div class="funnel-nav"><button class="funnel-btn-back" onclick="funnelPrev()">Zurück</button>' +
           '<button class="funnel-btn-next" onclick="funnelSubmit()">Anfrage absenden</button></div>';
