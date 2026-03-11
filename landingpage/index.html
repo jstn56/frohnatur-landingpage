@@ -1918,7 +1918,7 @@ setTimeout(() => {
           '<p class="funnel-subtitle">Das Angebot umfasst genau 4 Nächte – die Abreise wird automatisch berechnet.</p>' +
           '<div class="funnel-date-grid">' +
           '<div class="funnel-field"><label>Anreise</label>' +
-          '<input type="date" class="funnel-date-input" id="f-anreise" min="2026-06-07" max="2026-06-17" value="' + (fd.anreisedatum||'') + '" onchange="funnelDateChange(\'anreisedatum\',this.value)"></div>' +
+          '<input type="date" class="funnel-date-input" id="f-anreise" min="2026-06-07" max="2026-06-17" value="' + (fd.anreisedatum||'') + '" onchange="funnelDateChange(\'anreisedatum\',this.value)" onclick="try{this.showPicker()}catch(e){}"></div>' +
           '<div class="funnel-field"><label>Abreise <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--stone);font-size:0.65rem;">(4 Nächte · automatisch)</span></label>' +
           '<input type="date" class="funnel-date-input" id="f-abreise" value="' + abrVal + '" disabled style="background:var(--parchment);opacity:0.7;cursor:not-allowed;"></div>' +
           '</div>' +
