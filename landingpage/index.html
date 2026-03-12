@@ -871,27 +871,9 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(44,74,46,0.08); }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
-  .nav-links, .nav-cta { display: none; }
-  .hamburger { display: flex; }
-  .mobile-menu {
-    display: none;
-    position: fixed;
-    top: 108px; left: 0; right: 0; bottom: 0;
-    background: var(--snow);
-    z-index: 99;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 32px;
-  }
-  .mobile-menu.open { display: flex; }
-  .mobile-menu a {
-    font-size: 1.2rem;
-    font-family: var(--serif);
-    font-weight: 600;
-    color: var(--charcoal);
-    text-decoration: none;
-  }
+  .nav-links { display: none; }
+  .nav-cta { display: inline-block; }
+  .hamburger { display: none; }
   .hero { grid-template-columns: 1fr; min-height: auto; }
   .hero-left { justify-content: flex-start; padding: 60px 0 40px; }
   .hero-left-inner { max-width: 100%; padding-right: 32px; }
@@ -1267,22 +1249,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <li><a href="#faq">FAQ</a></li>
       </ul>
       <a href="#anfragen" class="btn-primary nav-cta">Jetzt anfragen</a>
-      <div class="hamburger" onclick="toggleMenu()">
-        <span></span><span></span><span></span>
-      </div>
     </div>
   </div>
 </nav>
 </div>
 
-<!-- MOBILE MENU -->
-<div class="mobile-menu" id="mobileMenu">
-  <a href="#versprechen" onclick="toggleMenu()">Unser Versprechen</a>
-  <a href="#zimmer" onclick="toggleMenu()">Zimmer</a>
-  <a href="#gaestestimmen" onclick="toggleMenu()">Gästestimmen</a>
-  <a href="#faq" onclick="toggleMenu()">FAQ</a>
-  <a href="#anfragen" class="btn-primary" onclick="toggleMenu()">Jetzt anfragen</a>
-</div>
 
 <!-- HERO -->
 <section class="hero">
@@ -1382,11 +1353,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <span class="usp-icon">🐶</span>
         <h3>Hund darf mit</h3>
         <p>Dein Hund ist willkommen. Keine langen Abfragen, keine Komplikationen. Das Hotel Frohnatur ist ein hundefreundliches Haus.</p>
-      </div>
-    </div>
-    <div class="usp-cta">
-      <div class="btn-pair">
-        <a href="#anfragen" class="btn-primary">Jetzt unverbindlich anfragen</a>
       </div>
     </div>
   </div>
@@ -1757,7 +1723,6 @@ const hero = document.querySelector('.hero');
 function updateHeroOffset() {
   const h = siteHeader.offsetHeight;
   hero.style.paddingTop = h + 'px';
-  document.querySelector('.mobile-menu').style.top = h + 'px';
 }
 updateHeroOffset();
 window.addEventListener('resize', updateHeroOffset);
@@ -1768,10 +1733,6 @@ window.addEventListener('scroll', () => {
   navbar.classList.toggle('scrolled', window.scrollY > 40);
 });
 
-// Mobile menu
-function toggleMenu() {
-  document.getElementById('mobileMenu').classList.toggle('open');
-}
 
 // FAQ accordion
 function toggleFaq(btn) {
