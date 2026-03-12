@@ -1914,6 +1914,16 @@ setTimeout(() => {
   // Intercept all #anfragen CTAs
   document.querySelectorAll('a[href="#anfragen"]').forEach(function (a) {
     a.addEventListener('click', window.openFunnel);
+    var startY = 0;
+    a.addEventListener('touchstart', function(e) {
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+    a.addEventListener('touchend', function(e) {
+      if (Math.abs(e.changedTouches[0].clientY - startY) < 10) {
+        e.preventDefault();
+        window.openFunnel(e);
+      }
+    });
   });
   overlay.addEventListener('click', function (e) { if (e.target === overlay) window.closeFunnel(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && overlay.classList.contains('open')) window.closeFunnel(); });
